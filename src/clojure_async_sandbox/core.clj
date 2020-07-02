@@ -28,30 +28,30 @@
 (defn new-product-handler []
   (let [input (async/chan)
         output (async/chan)]
-    (async/go
-      (while-let [message (async/<! input)]
+    (async/thread
+      (while-let [message (async/<!! input)]
                  (println (str "Processing new product: " message))
-                 (async/>! output message)))
+                 (async/>!! output message)))
     [input output]))
 
 (defn cost-change-handler []
   (let [input (async/chan)
         output (async/chan)]
-    (async/go
-      (while-let [message (async/<! input)]
+    (async/thread
+      (while-let [message (async/<!! input)]
                  (println (str "Processing cost change: " message))
-                 (async/>! output message)))
+                 (async/>!! output message)))
     [input output]))
 
 (defn price-computation-handler [input-channels]
   (let [output (async/chan)]
-    (async/go (loop []
-                    (let [[message channel] (async/alts! input-channels)]
-                      (when message
-                        (println (str "Computing price for: " message))
-                        (async/go (let [t (+ 50 (rand-int 100))]
+    (async/thread (loop []
+                    (let [[message channel] (async/alts!! input-channels)]
+                      (when message                        
+                        (async/thread (let [t (+ 50 (rand-int 100))]
+                                        (println (str "Computing price for: " message))
                                         (heavy-fn)
-                                        (async/>! output (str "New price for " message " took " t " miliseconds"))))
+                                        (async/>!! output (str "New price for " message " took " t " miliseconds"))))
                         (recur)))))
     output))
 
@@ -61,11 +61,11 @@
         new-price-output (price-computation-handler [new-product-output cost-change-output])
         events [new-product-input cost-change-input]
         products ["bananas" "apples" "grapes" "oranges" "papaya"]
-        number-of-products 1000
+        number-of-products 50
         product-count (atom 0)]
 
     (doseq [n (range number-of-products)]
-      (async/go (async/>! (nth events (rand-int (count events))) {:event_id n :name (nth products (rand-int (count products)))})))
+      (async/thread (async/>!! (nth events (rand-int (count events))) {:event_id n :name (nth products (rand-int (count products)))})))
 
     (async/thread
       (while (not= @product-count number-of-products))
