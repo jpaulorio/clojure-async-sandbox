@@ -28,19 +28,19 @@
 (defn new-product-handler []
   (let [input (async/chan)
         output (async/chan)]
-    (async/thread
-      (while-let [message (async/<!! input)]
+    (async/go
+      (while-let [message (async/<! input)]
                  (println (str "Processing new product: " message))
-                 (async/>!! output message)))
+                 (async/>! output message)))
     [input output]))
 
 (defn cost-change-handler []
   (let [input (async/chan)
         output (async/chan)]
-    (async/thread
-      (while-let [message (async/<!! input)]
+    (async/go
+      (while-let [message (async/<! input)]
                  (println (str "Processing cost change: " message))
-                 (async/>!! output message)))
+                 (async/>! output message)))
     [input output]))
 
 (defn price-computation-handler [input-channels]
@@ -65,7 +65,7 @@
         product-count (atom 0)]
 
     (doseq [n (range number-of-products)]
-      (async/thread (async/>!! (nth events (rand-int (count events))) {:event_id n :name (nth products (rand-int (count products)))})))
+      (async/go (async/>! (nth events (rand-int (count events))) {:event_id n :name (nth products (rand-int (count products)))})))
 
     (async/thread
       (while (not= @product-count number-of-products))
