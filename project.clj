@@ -8,6 +8,7 @@
                  [org.clojure/core.async "1.2.603"]
                  [while-let "0.2.0"]
                  [net.mikera/core.matrix "0.62.0"]
+                 [clojure.java-time "0.3.2"]
                  ]
   :main ^:skip-aot clojure-async-sandbox.core
   :target-path "target/%s"

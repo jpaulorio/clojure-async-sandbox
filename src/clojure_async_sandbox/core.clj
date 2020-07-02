@@ -2,32 +2,22 @@
   (:require [clojure.core.async :as async])
   (:require [while-let.core :refer :all])
   (:require [clojure.core.matrix :as m])
+  (:require [java-time :as jt])
   (:gen-class))
 
-(defn transpose
-  [s]
-  (apply map vector s))
+(defn round-places [number decimals]
+  (let [factor (Math/pow 10 decimals)]
+    (double (/ (Math/round (* factor number)) factor))))
 
-(defn nested-for
-  [f x y]
-  (map (fn [a]
-         (map (fn [b]
-                (f a b)) y))
-       x))
-
-(defn matrix-mult
-  [a b]
-  (nested-for (fn [x y] (reduce + (map * x y))) a (transpose b)))
-
-(defn heavy-fn []
-  (let [matrix-size 200000
-        A [(vec (repeatedly matrix-size #(rand 10))) (vec (repeatedly matrix-size #(rand 10)))]
-        B [(vec (repeatedly matrix-size #(rand 10))) (vec (repeatedly matrix-size #(rand 10)))]]
-    (apply + (map (partial reduce +) (matrix-mult A B)))))
+(defn heavy-fn []  
+  (let [matrix-size 10000
+        A [(vec (repeatedly matrix-size #(rand 5))) (vec (repeatedly matrix-size #(rand 5)))]
+        B [(vec (repeatedly matrix-size #(rand 5))) (vec (repeatedly matrix-size #(rand 5)))]]
+    (/ (round-places (apply + (map (partial reduce +) (m/mul A B))) 2) (rand 100000))))
 
 (defn new-product-handler []
-  (let [input (async/chan)
-        output (async/chan)]
+  (let [input (async/chan 2048)
+        output (async/chan 2048)]
     (async/go
       (while-let [message (async/<! input)]
                  (println (str "Processing new product: " message))
@@ -35,8 +25,8 @@
     [input output]))
 
 (defn cost-change-handler []
-  (let [input (async/chan)
-        output (async/chan)]
+  (let [input (async/chan 2048)
+        output (async/chan 2048)]
     (async/go
       (while-let [message (async/<! input)]
                  (println (str "Processing cost change: " message))
@@ -44,14 +34,16 @@
     [input output]))
 
 (defn price-computation-handler [input-channels]
-  (let [output (async/chan)]
-    (async/thread (loop []
-                    (let [[message channel] (async/alts!! input-channels)]
+  (let [output (async/chan 4096)]
+    (async/go (loop []
+                    (let [[message channel] (async/alts! input-channels)]
                       (when message                        
-                        (async/thread (let [t (+ 50 (rand-int 100))]
+                        (async/go (let [t (jt/instant)]
                                         (println (str "Computing price for: " message))
-                                        (heavy-fn)
-                                        (async/>!! output (str "New price for " message " took " t " miliseconds"))))
+                                        (let [price (heavy-fn)
+                                              elapsed (jt/time-between t (jt/instant) :millis)]                                          
+                                          (async/>! output (str "New price for " (assoc message :price price) " took " elapsed " miliseconds"))
+                                          (println (str "Price computed for: " message)))))
                         (recur)))))
     output))
 
@@ -61,7 +53,7 @@
         new-price-output (price-computation-handler [new-product-output cost-change-output])
         events [new-product-input cost-change-input]
         products ["bananas" "apples" "grapes" "oranges" "papaya"]
-        number-of-products 50
+        number-of-products 6000
         product-count (atom 0)]
 
     (doseq [n (range number-of-products)]
