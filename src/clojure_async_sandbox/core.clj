@@ -1,7 +1,29 @@
 (ns clojure-async-sandbox.core
   (:require [clojure.core.async :as async])
   (:require [while-let.core :refer :all])
+  (:require [clojure.core.matrix :as m])
   (:gen-class))
+
+(defn transpose
+  [s]
+  (apply map vector s))
+
+(defn nested-for
+  [f x y]
+  (map (fn [a]
+         (map (fn [b]
+                (f a b)) y))
+       x))
+
+(defn matrix-mult
+  [a b]
+  (nested-for (fn [x y] (reduce + (map * x y))) a (transpose b)))
+
+(defn heavy-fn []
+  (let [matrix-size 200000
+        A [(vec (repeatedly matrix-size #(rand 10))) (vec (repeatedly matrix-size #(rand 10)))]
+        B [(vec (repeatedly matrix-size #(rand 10))) (vec (repeatedly matrix-size #(rand 10)))]]
+    (apply + (map (partial reduce +) (matrix-mult A B)))))
 
 (defn new-product-handler []
   (let [input (async/chan)
@@ -24,13 +46,13 @@
 (defn price-computation-handler [input-channels]
   (let [output (async/chan)]
     (async/go (loop []
-                (let [[message channel] (async/alts! input-channels)]
-                  (when message
-                    (println (str "Computing price for: " message))
-                    (async/go (let [t (+ 50 (rand-int 100))]
-                                (Thread/sleep t)
-                                (async/>! output (str "New price for " message " took " t " miliseconds"))))
-                    (recur)))))
+                    (let [[message channel] (async/alts! input-channels)]
+                      (when message
+                        (println (str "Computing price for: " message))
+                        (async/go (let [t (+ 50 (rand-int 100))]
+                                        (heavy-fn)
+                                        (async/>! output (str "New price for " message " took " t " miliseconds"))))
+                        (recur)))))
     output))
 
 (defn -main [& args]

@@ -7,6 +7,7 @@
                  [org.clojure/clojure "1.10.0"],
                  [org.clojure/core.async "1.2.603"]
                  [while-let "0.2.0"]
+                 [net.mikera/core.matrix "0.62.0"]
                  ]
   :main ^:skip-aot clojure-async-sandbox.core
   :target-path "target/%s"
