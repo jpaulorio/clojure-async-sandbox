@@ -40,10 +40,11 @@
                     (async/go (let [t (jt/instant)]
                                 (println (str "Computing price for: " message))
                                 (let [price (compute-price)
-                                      elapsed (jt/time-between t (jt/instant) :millis)]
-                                  (async/>! output (str "New price for " (assoc message :price price) " took " elapsed " miliseconds"))
+                                      elapsed (jt/time-between t (jt/instant) :millis)
+                                      output-message (assoc message :price price)]
+                                  (async/>! output (str "New price for " output-message " took " elapsed " miliseconds"))
                                   (swap! total-processing-time #(+ % elapsed))
-                                  (println (str "Price computed for: " message)))))
+                                  (println (str "Price computed for: " output-message)))))
                     (recur)))))
     output))
 
