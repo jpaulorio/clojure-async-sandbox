@@ -34,28 +34,27 @@
 
 (defn price-computation-handler [input-channels total-processing-time]
   (let [output (async/chan 20000)]
-    (async/go (loop []
-                (let [[message channel] (async/alts! input-channels)]
-                  (when message
-                    (async/go (let [t (jt/instant)]
-                                (println (str "Computing price for: " message))
-                                (let [price (compute-price)
-                                      elapsed (jt/time-between t (jt/instant) :millis)
-                                      output-message (assoc message :price price)]
-                                  (async/>! output (str "New price for " output-message " took " elapsed " miliseconds"))
-                                  (swap! total-processing-time #(+ % elapsed))
-                                  (println (str "Price computed for: " output-message)))))
-                    (recur)))))
+    (async/go-loop []
+     (let [[message channel] (async/alts! input-channels)]
+       (when message
+         (async/go (let [t (jt/instant)]
+                     (println (str "Computing price for: " message))
+                     (let [price (compute-price)
+                           elapsed (jt/time-between t (jt/instant) :millis)
+                           output-message (assoc message :price price)]
+                       (async/>! output (str "New price for " output-message " took " elapsed " miliseconds"))
+                       (swap! total-processing-time #(+ % elapsed))
+                       (println (str "Price computed for: " output-message)))))
+         (recur))))
     output))
 
-(defn run-simulation [args]
+(defn run-simulation [number-of-products]
   (let [total-processing-time (atom 0)
         [new-product-input new-product-output] (input-event-handler new-product-handler)
         [cost-change-input cost-change-output] (input-event-handler cost-change-handler)
         new-price-output (price-computation-handler [new-product-output cost-change-output] total-processing-time)
         events [new-product-input cost-change-input]
         products ["bananas" "apples" "grapes" "oranges" "papaya"]
-        number-of-products (if-let [arguments args] (read-string (first arguments)) 50)
         product-count (atom 0)]
 
     (doseq [n (range number-of-products)]
