@@ -1,19 +1,10 @@
 (ns clojure-async-sandbox.single-handler
   (:require [clojure.core.async :as async])
   (:require [while-let.core :refer :all])
-  (:require [clojure.core.matrix :as m])
   (:require [java-time :as jt])
+  (:require [clojure-async-sandbox.common :refer :all])
+  (:require [clojure-async-sandbox.event-handlers :refer :all])
   (:gen-class))
-
-(defn round-places [number decimals]
-  (let [factor (Math/pow 10 decimals)]
-    (double (/ (Math/round (* factor number)) factor))))
-
-(defn compute-price []
-  (let [matrix-size 2000
-        A [(vec (repeatedly matrix-size #(rand 5))) (vec (repeatedly matrix-size #(rand 5)))]
-        B [(vec (repeatedly matrix-size #(rand 5))) (vec (repeatedly matrix-size #(rand 5)))]]
-    (round-places (/ (apply + (map (partial reduce +) (m/mul A B))) (rand 100000)) 2)))
 
 (defn input-event-handler [event-handler-fn]  
   (let [input (async/chan 15000)
@@ -23,14 +14,6 @@
                  (let [result (event-handler-fn message)]
                    (async/>! output result))))
     [input output]))
-
-(defn new-product-handler [message]
-  (println (str "Processing new product: " message))
-  message)
-
-(defn cost-change-handler [message]
-  (println (str "Processing cost change: " message))
-  message)
 
 (defn price-computation-handler [input-channels total-processing-time]
   (let [output (async/chan 20000)]
