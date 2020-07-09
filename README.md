@@ -1,6 +1,6 @@
 # clojure-async-sandbox
 
-FIXME: description
+Just me playing with clojure.core.async. I'm simulating a price computation engine. In order to simulate a cpu-bound price computation I'm doing some operations with matrices. Then I have two main programs, one that has a single event handler for computing prices for all products and another one that has one event handler per product. The latter uses clojure to store the last computed price in an atom. I'm kinda implementing some sort of actor model here where each event handler represents an actor and we have one actor per product.
 
 ## Installation
 
@@ -8,29 +8,43 @@ Download from http://example.com/FIXME.
 
 ## Usage
 
-FIXME: explanation
+To build the uberjar only:
 
-    $ java -jar clojure-async-sandbox-0.1.0-standalone.jar [args]
+    $ ./build.sh
+
+To build and run with default args:
+
+    $ ./build-and-run.sh
+
+Run the following command to run both programs computing prices for 50 products:
+
+    $ ./run.sh
 
 ## Options
 
-FIXME: listing of options this app accepts.
+./run.sh [mode] [number-of-products]
+
+mode - sh or mh
+
+number-of-products - any positive integer
 
 ## Examples
 
-...
+    $ ./run.sh sh 100
+
+    $ ./run.sh mh 1000
 
 ### Bugs
 
-...
+Probably a lot.
 
-### Any Other Sections
-### That You Think
-### Might be Useful
+### Disclaimer
+
+This is a just a toy project so I can learn clojure.core.async and should not be seen as a production-grade solution.
 
 ## License
 
-Copyright © 2020 FIXME
+Copyright © 2020 JP Silva
 
 This program and the accompanying materials are made available under the
 terms of the Eclipse Public License 2.0 which is available at
