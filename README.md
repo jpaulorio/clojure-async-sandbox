@@ -1,6 +1,6 @@
 # clojure-async-sandbox
 
-Just me playing with clojure.core.async. I'm simulating a price computation engine. In order to simulate a cpu-bound price computation I'm doing some operations with matrices. Then I have two main programs, one that has a single event handler for computing prices for all products and another one that has one event handler per product. The latter uses clojure to store the last computed price in an atom. I'm kinda implementing some sort of actor model here where each event handler represents an actor and we have one actor per product.
+Just me playing with clojure.core.async. I'm simulating a price computation engine. In order to simulate a cpu-bound price computation I'm doing some operations with matrices. Then I have two main programs, one that has a single event handler for computing prices for all products and another one that has one event handler per product. The latter uses closure to store the last computed price in an atom. I'm kinda implementing some sort of actor model here where each event handler represents an actor and we have one actor per product.
 
 ## Installation
 
