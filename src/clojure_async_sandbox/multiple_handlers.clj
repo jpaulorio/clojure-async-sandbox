@@ -34,44 +34,41 @@
                 (swap! total-processing-time #(+ % elapsed))))
             (recur)))))))
 
-(defn generate-products [product-count]
-  (map #(-> {:product-id % :price 0.00 :input-channel (async/chan 2) :output-channel (async/chan 2)}) (range product-count)))
-
-(defn pick-random-event-channel [event-types event-handler-map]
-  (let [event-type (nth event-types (rand-int (count event-types)))]
-    (event-type event-handler-map)))
-
-(defn pick-random-product [products]
-  (nth products (rand-int (count products))))
-
 (defn run-simulation [number-of-products number-of-events]
   (let [products (generate-products number-of-products)
         total-processing-time (atom 0)
-        new-product-input (input-event-handler new-product-handler products)
-        cost-change-input (input-event-handler cost-change-handler products)
+        new-product-event-channel (input-event-handler new-product-handler products)
+        cost-change-event-channel (input-event-handler cost-change-handler products)
         event-types [:new-product :cost-change]
-        event-channel-map  {:new-product new-product-input :cost-change cost-change-input}
+        event-channel-map  {:new-product new-product-event-channel :cost-change cost-change-event-channel}
         event-count (atom 0)]
 
+    ;creates am event handler for each product and starts processing events
     (doseq [product products]
       ((price-computation-handler (:input-channel product) (:output-channel product) total-processing-time)))
     
+    ;randomly sends events to the products' input channels
     (doseq [n (range number-of-events)]
       (async/go (async/>! (pick-random-event-channel event-types event-channel-map) (pick-random-product products))))
 
-    (println (str "Multiple Handlers - Processing new prices for " number-of-products " products ..."))
+    (println (str "Multiple Handlers - Computing prices for " number-of-products " products ..."))
+    
+    ;consolidate computed prices (fan-in) from all products' output channels
     (async/go (while-let [[message _] (async/alts! (map #(:output-channel %) products))]
                          (swap! event-count inc)
                          (println (str message " - " @event-count " of " number-of-events))))
 
+    ;waits until all events are processed
     (while (not= @event-count number-of-events))
 
-    (async/close! new-product-input)
-    (async/close! cost-change-input)
+    ;close channels
+    (async/close! new-product-event-channel)
+    (async/close! cost-change-event-channel)
     (doseq [input-channel (:input-channel products)
             output-channel (:output-channel products)]
       (async/close! input-channel)
       (async/close! output-channel))
 
+    ;computes average price computation time
     (let [avg-processing-time (float (/ @total-processing-time number-of-products))]
       (println (str "Avg price computation time: " avg-processing-time " ms")))))
