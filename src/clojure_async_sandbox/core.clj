@@ -6,10 +6,11 @@
 
 (defn -main [& args]
   (let [mode (if-let [arguments args] (keyword (first arguments)) :both)
-        number-of-products (if-let [arguments args] (read-string (second arguments)) 50)]
+        number-of-products (if-let [arguments args] (read-string (second arguments)) 50)
+        number-of-events (if-let [arguments args] (read-string (nth arguments 2)) 100)]
     (case mode
       :sh (sh/run-simulation number-of-products)
       :mh (mh/run-simulation number-of-products)
       :both (do
               (sh/run-simulation number-of-products)
-              (mh/run-simulation number-of-products)))))
+              (mh/run-simulation number-of-products number-of-events)))))
