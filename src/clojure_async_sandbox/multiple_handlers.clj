@@ -47,11 +47,11 @@
     (doseq [product products]
       ((price-computation-handler (:input-channel product) (:output-channel product) total-processing-time)))
     
-    ;randomly sends events to the products' input channels
+    ;randomly sends events to the events' input channels
     (doseq [n (range number-of-events)]
       (async/go (async/>! (pick-random-event-channel event-types event-channel-map) (pick-random-product products))))
 
-    (println (str "Multiple Handlers - Computing prices for " number-of-products " products ..."))
+    (println (str "Multiple Handlers - Processing " number-of-events " events for " number-of-products " products ..."))
     
     ;consolidate computed prices (fan-in) from all products' output channels
     (async/go (while-let [[message _] (async/alts! (map #(:output-channel %) products))]
@@ -61,14 +61,8 @@
     ;waits until all events are processed
     (while (not= @event-count number-of-events))
 
-    ;close channels
-    (async/close! new-product-event-channel)
-    (async/close! cost-change-event-channel)
-    (doseq [input-channel (:input-channel products)
-            output-channel (:output-channel products)]
-      (async/close! input-channel)
-      (async/close! output-channel))
-
+    (close-channels (concat [new-product-event-channel cost-change-event-channel] (map identity (:input-channel products)) (map identity (:output-channel products))))
+    
     ;computes average price computation time
     (let [avg-processing-time (float (/ @total-processing-time number-of-products))]
       (println (str "Avg price computation time: " avg-processing-time " ms")))))

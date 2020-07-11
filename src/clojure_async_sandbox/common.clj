@@ -25,3 +25,7 @@
 
 (defn pick-random-product [products]
   (nth products (rand-int (count products))))
+
+(defn close-channels [channels]
+  (doseq [channel channels]
+    (async/close! channel)))

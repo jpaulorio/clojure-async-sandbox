@@ -40,21 +40,21 @@
         event-channel-map  {:new-product new-product-event-channel :cost-change cost-change-event-channel}
         event-count (atom 0)]
 
+    ;randomly sends events to the events' input channels
     (doseq [n (range number-of-events)]
       (async/go (async/>! (pick-random-event-channel event-types event-channel-map) (pick-random-product products))))
 
-    (println (str "Single Handler - Processing new prices for " number-of-products " products ..."))
+    (println (str "Single Handler - Processing " number-of-events " events for " number-of-products " products ..."))
+
+    ;consolidate computed prices from the new price channel
     (async/go (while-let [message (async/<! new-price-output)]
                          (swap! event-count inc)
                          (println (str message " - " @event-count " of " number-of-events))))
 
+    ;waits until all events are processed
     (while (not= @event-count number-of-products))
 
-    (async/close! new-product-event-channel)
-    (async/close! new-product-output-channel)
-    (async/close! cost-change-event-channel)
-    (async/close! cost-change-output-channel)
-    (async/close! new-price-output)
-
+    (close-channels [new-product-event-channel new-product-output-channel cost-change-event-channel cost-change-output-channel new-price-output])
+    
     (let [avg-processing-time (float (/ @total-processing-time number-of-products))]
       (println (str "Avg price computation time: " avg-processing-time " ms")))))
