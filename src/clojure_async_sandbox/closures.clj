@@ -13,6 +13,6 @@
 (defn -main [& args]
   (let [initial-account-state (bank-account)
         account-after-credit ((:credit-account initial-account-state) 1000)
-        account-after-debit ((:debit-account account-after-credit) 500)]
+        account-after-debit ((:debit-account account-after-credit) 300)]
     ((:current-balance account-after-debit))
     ((:list-transactions account-after-debit))))
