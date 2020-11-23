@@ -6,7 +6,7 @@
   (let [input (atom (async/chan))]
     (async/go
       (let [current-input @input
-            message (async/<! @input)]
+            message (async/<! current-input)]
         (swap! input (fn update-input [_] (behavior message)))
         (while-let [m (async/<! current-input)]
                    (async/>! @input m))))
