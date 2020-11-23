@@ -19,11 +19,11 @@
    (defmethod bank-account-behavior :list-transactions [message]
      (doseq [transaction transaction-history] (println "Transaction:" (:type transaction) (:amount transaction)))
      (bank-account current-balance transaction-history))
-   (actor bank-account-behavior)))
+   bank-account-behavior))
 
 
 (defn -main [& args]
-  (let [bank-account (bank-account)]
+  (let [bank-account (actor (bank-account))]
     (async/go
       (async/>! bank-account {:type :credit :amount 1000})
       (async/>! bank-account {:type :debit :amount 300})
