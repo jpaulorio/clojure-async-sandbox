@@ -23,7 +23,7 @@
 
 
 (defn -main [& args]
-  (let [bank-account (actor (bank-account))]
+  (let [bank-account (build-actor bank-account)]
     (async/go
       (async/>! bank-account {:type :credit :amount 1000})
       (async/>! bank-account {:type :debit :amount 300})
