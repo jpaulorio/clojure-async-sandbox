@@ -1,6 +1,5 @@
 (ns clojure-async-sandbox.bank-account
   (:require [clojure.core.async :as async])
-  (:require [while-let.core :refer :all])
   (:require [clojure-async-sandbox.actors :refer :all])
   (:gen-class))
 
