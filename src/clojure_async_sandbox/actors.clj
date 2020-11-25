@@ -16,3 +16,9 @@
       (if initial-state
         (apply actor initial-state)
         (actor)))))
+
+(defn send-async [actor message]
+  (async/go (async/>! actor message)))
+
+(defn send-sync [actor message]
+  (async/>!! actor message))

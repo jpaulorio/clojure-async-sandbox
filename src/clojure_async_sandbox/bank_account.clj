@@ -26,9 +26,8 @@
 (defn -main [& args]
   (let [bank-account
         (build-actor bank-account)]
-    (async/go
-      (async/>! bank-account {:type :credit :amount 1000})
-      (async/>! bank-account {:type :debit :amount 300})
-      (async/>! bank-account {:type :current-balance})
-      (async/>! bank-account {:type :list-transactions})))
+    (send-sync bank-account {:type :credit :amount 1000})
+    (send-sync bank-account {:type :debit :amount 300})
+    (send-sync bank-account {:type :current-balance})
+    (send-sync bank-account {:type :list-transactions}))
   (read-line))
