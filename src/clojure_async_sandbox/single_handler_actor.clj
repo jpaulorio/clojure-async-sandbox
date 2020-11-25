@@ -9,9 +9,11 @@
   (defmulti product-handler-behavior (fn [message] (:channel message)))
   (defmethod product-handler-behavior :store [message]
     (println "Processing new store product with id:" (:product-id message))
+    (async/go (async/>! price-calculation-actor message))
     (new-product-handler (inc store-products-count) online-products-count price-calculation-actor))
   (defmethod product-handler-behavior :online [message]
     (println "Processing new online product with id:" (:product-id message))
+    (async/go (async/>! price-calculation-actor message))
     (new-product-handler store-products-count (inc online-products-count) price-calculation-actor))
   product-handler-behavior)
 
@@ -65,6 +67,4 @@
                          (println (str (dissoc message :input-channel :output-channel) " - " @event-count " of " number-of-events))))
 
     ;waits until all events are processed
-    (while (not= @event-count number-of-products)
-      ;(println "Prices computed so far:" @event-count)
-      )))
+    (while (not= @event-count number-of-products))))
