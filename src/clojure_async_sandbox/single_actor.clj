@@ -1,4 +1,4 @@
-(ns clojure-async-sandbox.single-handler-actor
+(ns clojure-async-sandbox.single-actor
   (:require [clojure-async-sandbox.common :refer :all])
   (:require [clojure-async-sandbox.actors :refer :all])
   (:require [clojure.core.async :as async])
