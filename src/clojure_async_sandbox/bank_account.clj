@@ -4,8 +4,10 @@
   (:gen-class))
 
 (defn bank-account
-  ([] (bank-account 0))
-  ([current-balance] (bank-account current-balance []))
+  ([]
+   (bank-account 0))
+  ([current-balance]
+   (bank-account current-balance []))
   ([current-balance transaction-history]
    (defmulti bank-account-behavior (fn [message] (:type message)))
    (defmethod bank-account-behavior :credit [message]
@@ -22,7 +24,8 @@
 
 
 (defn -main [& args]
-  (let [bank-account (build-actor bank-account)]
+  (let [bank-account
+        (build-actor bank-account)]
     (async/go
       (async/>! bank-account {:type :credit :amount 1000})
       (async/>! bank-account {:type :debit :amount 300})

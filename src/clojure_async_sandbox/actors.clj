@@ -2,7 +2,7 @@
   (:require [clojure.core.async :as async])
   (:require [while-let.core :refer :all]))
 
-(defn build-actor [actor]
+(defn build-actor [actor & initial-state]
   (letfn [(behave [behavior]
             (let [current-input (async/chan)]
               (async/go
@@ -11,4 +11,7 @@
                     (while-let [m (async/<! current-input)]
                                (async/>! new-input m)))))
               current-input))]
-    (behave (actor))))
+    (behave
+      (if initial-state
+        (apply actor initial-state)
+        (actor)))))

@@ -16,8 +16,12 @@
 (defn find-product [message product-list]
   (first (filter #(= (:product-id %) (:product-id message)) product-list)))
 
+(defn pick-random-sales-channel []
+  (let [sales-channel-types [:store :online]]
+    (nth sales-channel-types (rand-int (count sales-channel-types)))))
+
 (defn generate-products [product-count]
-  (map #(-> {:product-id % :price 0.00 :input-channel (async/chan 2) :output-channel (async/chan 2)}) (range product-count)))
+  (map #(-> {:product-id % :price 0.00 :channel (pick-random-sales-channel) :input-channel (async/chan 2) :output-channel (async/chan 2)}) (range product-count)))
 
 (defn pick-random-event-channel [event-types event-handler-map]
   (let [event-type (nth event-types (rand-int (count event-types)))]
