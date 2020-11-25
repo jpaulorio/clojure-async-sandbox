@@ -52,7 +52,7 @@
                          (println (str message " - " @event-count " of " number-of-events))))
 
     ;waits until all events are processed
-    (while (not= @event-count number-of-products))
+    (while (not= @event-count number-of-events))
 
     (close-channels [new-product-event-channel new-product-output-channel cost-change-event-channel cost-change-output-channel new-price-output])
     

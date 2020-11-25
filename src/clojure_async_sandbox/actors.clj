@@ -9,7 +9,8 @@
                 (let [message (async/<! current-input)]
                   (let [new-input (behave (behavior message))]
                     (while-let [m (async/<! current-input)]
-                               (async/>! new-input m)))))
+                               (async/>! new-input m))
+                    (async/close! current-input))))
               current-input))]
     (behave
       (if initial-state

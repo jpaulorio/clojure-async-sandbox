@@ -46,8 +46,8 @@
   price-computation-handler-behavior)
 
 (defn -main [& args]
-  (let [number-of-events (if (first args) (first args) 100)
-        number-of-products (if (second args) (second args) 100)
+  (let [number-of-events (if (first args) (first args) 1000)
+        number-of-products (if (second args) (second args) 200)
         products (vec (generate-products number-of-products))
         new-price-output (async/chan)
         price-computation-handler-actor (build-actor price-computation-handler products new-price-output)
@@ -67,4 +67,5 @@
                          (println (str (dissoc message :input-channel :output-channel) " - " @event-count " of " number-of-events))))
 
     ;waits until all events are processed
-    (while (not= @event-count number-of-products))))
+    (while (not= @event-count number-of-events))
+    (async/close! new-price-output)))
