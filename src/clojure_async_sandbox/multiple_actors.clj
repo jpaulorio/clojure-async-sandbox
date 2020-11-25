@@ -37,14 +37,16 @@
   (defmulti price-computation-handler-behavior (fn [message] (:channel message)))
   (defmethod price-computation-handler-behavior :store [message]
     (let [product-id (:product-id message)
-          updated-product (assoc message :price (compute-price))]
-      (println "Computing price for store product with id:" product-id)
+          current-product (nth product-list product-id)
+          updated-product (assoc current-product :price (compute-price))]
+      (println "Computing price for store product:" (dissoc current-product :price-calculation-actor))
       (send-async output-channel updated-product)
       (price-computation-handler (assoc product-list product-id updated-product) output-channel)))
   (defmethod price-computation-handler-behavior :online [message]
     (let [product-id (:product-id message)
-          updated-product (assoc message :price (compute-price))]
-      (println "Computing price for online product with id:" product-id)
+          current-product (nth product-list product-id)
+          updated-product (assoc current-product :price (compute-price))]
+      (println "Computing price for online product:" (dissoc current-product :price-calculation-actor))
       (send-async output-channel updated-product)
       (price-computation-handler (assoc product-list product-id updated-product) output-channel)))
   price-computation-handler-behavior)
@@ -58,14 +60,14 @@
         cost-change-handler-actor (build-actor cost-change-handler 0 0)
         event-types [:new-product :cost-change]
         event-actor-map {:new-product new-product-handler-actor :cost-change cost-change-handler-actor}
+        products-actors-map (map #(assoc % :price-calculation-actor (build-actor price-computation-handler products new-price-output)) products)
         event-count (atom 0)]
     ;randomly sends events/messages to actors
     (doseq [n (range number-of-events)]
-      (send-async (pick-random-event-channel event-types event-actor-map)
-                  (assoc
-                    (pick-random-product products)
-                    :price-calculation-actor
-                    (build-actor price-computation-handler products new-price-output))))
+      (let [product (pick-random-product products-actors-map)
+            event-actor (pick-random-event-channel event-types event-actor-map)]
+        (send-async event-actor product)))
+
     (println (str "Single Handler Actor - Processing " number-of-events " events for " number-of-products " products ..."))
 
     ;consolidate computed prices from the new price channel
