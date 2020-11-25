@@ -31,7 +31,7 @@
     output))
 
 (defn run-simulation [number-of-products number-of-events]
-  (let [products (generate-products number-of-products)
+  (let [products (generate-products-without-channels number-of-products)
         total-processing-time (atom 0)
         [new-product-event-channel new-product-output-channel] (input-event-handler new-product-handler)
         [cost-change-event-channel cost-change-output-channel] (input-event-handler cost-change-handler)

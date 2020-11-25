@@ -20,7 +20,10 @@
   (let [sales-channel-types [:store :online]]
     (nth sales-channel-types (rand-int (count sales-channel-types)))))
 
-(defn generate-products [product-count]
+(defn generate-products-without-channels [product-count]
+  (map #(-> {:product-id % :price 0.00 :channel (pick-random-sales-channel)}) (range product-count)))
+
+(defn generate-products-with-channels [product-count]
   (map #(-> {:product-id % :price 0.00 :channel (pick-random-sales-channel) :input-channel (async/chan 2) :output-channel (async/chan 2)}) (range product-count)))
 
 (defn pick-random-event-channel [event-types event-handler-map]

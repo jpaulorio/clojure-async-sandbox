@@ -35,7 +35,7 @@
             (recur)))))))
 
 (defn run-simulation [number-of-products number-of-events]
-  (let [products (generate-products number-of-products)
+  (let [products (generate-products-with-channels number-of-products)
         total-processing-time (atom 0)
         new-product-event-channel (input-event-handler new-product-handler products)
         cost-change-event-channel (input-event-handler cost-change-handler products)

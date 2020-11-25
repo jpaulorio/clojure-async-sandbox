@@ -48,7 +48,7 @@
 (defn -main [& args]
   (let [number-of-events (if (first args) (first args) 1000)
         number-of-products (if (second args) (second args) 200)
-        products (vec (generate-products number-of-products))
+        products (vec (generate-products-without-channels number-of-products))
         new-price-output (async/chan)
         price-computation-handler-actor (build-actor price-computation-handler products new-price-output)
         new-product-handler-actor (build-actor new-product-handler 0 0 price-computation-handler-actor)
@@ -64,7 +64,7 @@
     ;consolidate computed prices from the new price channel
     (async/go (while-let [message (async/<! new-price-output)]
                          (swap! event-count inc)
-                         (println (str (dissoc message :input-channel :output-channel) " - " @event-count " of " number-of-events))))
+                         (println (str message " - " @event-count " of " number-of-events))))
 
     ;waits until all events are processed
     (while (not= @event-count number-of-events))
