@@ -33,34 +33,30 @@
       (cost-change-handler store-products-count (inc online-products-count))))
   cost-handler-behavior)
 
-(defn price-computation-handler [product-list output-channel]
+(defn price-computation-handler [current-product output-channel]
   (defmulti price-computation-handler-behavior (fn [message] (:channel message)))
   (defmethod price-computation-handler-behavior :store [message]
-    (let [product-id (:product-id message)
-          current-product (nth product-list product-id)
-          updated-product (assoc current-product :price (compute-price))]
+    (let [updated-product (assoc current-product :price (compute-price))]
       (println "Computing price for store product:" (dissoc current-product :price-calculation-actor))
       (send-async output-channel updated-product)
-      (price-computation-handler (assoc product-list product-id updated-product) output-channel)))
+      (price-computation-handler updated-product output-channel)))
   (defmethod price-computation-handler-behavior :online [message]
-    (let [product-id (:product-id message)
-          current-product (nth product-list product-id)
-          updated-product (assoc current-product :price (compute-price))]
+    (let [updated-product (assoc current-product :price (compute-price))]
       (println "Computing price for online product:" (dissoc current-product :price-calculation-actor))
       (send-async output-channel updated-product)
-      (price-computation-handler (assoc product-list product-id updated-product) output-channel)))
+      (price-computation-handler updated-product output-channel)))
   price-computation-handler-behavior)
 
 (defn -main [& args]
-  (let [number-of-events (if (first args) (first args) 1000)
-        number-of-products (if (second args) (second args) 200)
+  (let [number-of-events (if (first args) (first args) 10)
+        number-of-products (if (second args) (second args) 2)
         products (vec (generate-products-without-channels number-of-products))
         new-price-output (async/chan)
         new-product-handler-actor (build-actor new-product-handler 0 0)
         cost-change-handler-actor (build-actor cost-change-handler 0 0)
         event-types [:new-product :cost-change]
         event-actor-map {:new-product new-product-handler-actor :cost-change cost-change-handler-actor}
-        products-actors-map (map #(assoc % :price-calculation-actor (build-actor price-computation-handler products new-price-output)) products)
+        products-actors-map (map #(assoc % :price-calculation-actor (build-actor price-computation-handler % new-price-output)) products)
         event-count (atom 0)]
     ;randomly sends events/messages to actors
     (doseq [n (range number-of-events)]
