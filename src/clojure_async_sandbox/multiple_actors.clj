@@ -6,57 +6,57 @@
   (:gen-class))
 
 (defn new-product-handler [store-products-count online-products-count]
-  (defmulti product-handler-behavior (fn [message] (:channel message)))
-  (defmethod product-handler-behavior :store [message]
-    (let [price-calculation-actor (:price-calculation-actor message)]
-      (println "Processing new store product with id:" (:product-id message))
-      (send-async price-calculation-actor message)
-      (new-product-handler (inc store-products-count) online-products-count)))
-  (defmethod product-handler-behavior :online [message]
-    (let [price-calculation-actor (:price-calculation-actor message)]
-      (println "Processing new online product with id:" (:product-id message))
-      (send-async price-calculation-actor message)
-      (new-product-handler store-products-count (inc online-products-count))))
-  product-handler-behavior)
+  (letfn [(product-handler-behavior [message]
+            (case (:channel message)
+              :store (let [price-calculation-actor (:price-calculation-actor message)]
+                       (println "Processing new store product with id:" (:product-id message))
+                       (send-async price-calculation-actor message)
+                       (new-product-handler (inc store-products-count) online-products-count))
+              :online (let [price-calculation-actor (:price-calculation-actor message)]
+                        (println "Processing new online product with id:" (:product-id message))
+                        (send-async price-calculation-actor message)
+                        (new-product-handler store-products-count (inc online-products-count)))))]
+    product-handler-behavior))
 
 (defn cost-change-handler [store-products-count online-products-count]
-  (defmulti cost-handler-behavior (fn [message] (:channel message)))
-  (defmethod cost-handler-behavior :store [message]
-    (let [price-calculation-actor (:price-calculation-actor message)]
-      (println "Processing cost change for store product with id:" (:product-id message))
-      (send-async price-calculation-actor message)
-      (cost-change-handler (inc store-products-count) online-products-count)))
-  (defmethod cost-handler-behavior :online [message]
-    (let [price-calculation-actor (:price-calculation-actor message)]
-      (println "Processing cost change for online product with id:" (:product-id message))
-      (send-async price-calculation-actor message)
-      (cost-change-handler store-products-count (inc online-products-count))))
-  cost-handler-behavior)
+  (letfn [(cost-handler-behavior [message]
+            (case (:channel message)
+              :store (let [price-calculation-actor (:price-calculation-actor message)]
+                       (println "Processing cost change for store product with id:" (:product-id message))
+                       (send-async price-calculation-actor message)
+                       (cost-change-handler (inc store-products-count) online-products-count))
+              :online (let [price-calculation-actor (:price-calculation-actor message)]
+                        (println "Processing cost change for online product with id:" (:product-id message))
+                        (send-async price-calculation-actor message)
+                        (cost-change-handler store-products-count (inc online-products-count)))))]
+    cost-handler-behavior))
 
-(defn price-computation-handler [current-product output-channel]
-  (defmulti price-computation-handler-behavior (fn [message] (:channel message)))
-  (defmethod price-computation-handler-behavior :store [message]
-    (let [updated-product (assoc current-product :price (compute-price))]
-      (println "Computing price for store product:" (dissoc current-product :price-calculation-actor))
-      (send-async output-channel updated-product)
-      (price-computation-handler updated-product output-channel)))
-  (defmethod price-computation-handler-behavior :online [message]
-    (let [updated-product (assoc current-product :price (compute-price))]
-      (println "Computing price for online product:" (dissoc current-product :price-calculation-actor))
-      (send-async output-channel updated-product)
-      (price-computation-handler updated-product output-channel)))
-  price-computation-handler-behavior)
+(defn price-computation-handler [current-product output-channel price-history]
+  (letfn [(price-computation-handler-behavior [message]
+            (case (:channel message)
+              :store (let [updated-product (assoc current-product :price (compute-price))]
+                       (println "Computing price for store product:" (dissoc current-product :price-calculation-actor))
+                       (send-async output-channel updated-product)
+                       (price-computation-handler updated-product output-channel (cons (:price updated-product) price-history)))
+              :online (let [updated-product (assoc current-product :price (compute-price))]
+                        (println "Computing price for online product:" (dissoc current-product :price-calculation-actor))
+                        (send-async output-channel updated-product)
+                        (price-computation-handler updated-product output-channel (cons (:price updated-product) price-history)))
+              :list-history (let [product-id (:product-id current-product)]
+                              (println (str "Price history for product " product-id ": " price-history))
+                              (price-computation-handler current-product output-channel price-history))))]
+    price-computation-handler-behavior))
 
 (defn -main [& args]
-  (let [number-of-events (if (first args) (first args) 10)
-        number-of-products (if (second args) (second args) 2)
+  (let [number-of-events (if (first args) (first args) 1000)
+        number-of-products (if (second args) (second args) 200)
         products (vec (generate-products-without-channels number-of-products))
         new-price-output (async/chan)
         new-product-handler-actor (build-actor new-product-handler 0 0)
         cost-change-handler-actor (build-actor cost-change-handler 0 0)
         event-types [:new-product :cost-change]
         event-actor-map {:new-product new-product-handler-actor :cost-change cost-change-handler-actor}
-        products-actors-map (map #(assoc % :price-calculation-actor (build-actor price-computation-handler % new-price-output)) products)
+        products-actors-map (map #(assoc % :price-calculation-actor (build-actor price-computation-handler % new-price-output [])) products)
         event-count (atom 0)]
     ;randomly sends events/messages to actors
     (doseq [n (range number-of-events)]
@@ -73,4 +73,10 @@
 
     ;waits until all events are processed
     (while (not= @event-count number-of-events))
-    (async/close! new-price-output)))
+
+    (async/close! new-price-output)
+
+    (doseq [product products-actors-map]
+      (send-sync (:price-calculation-actor product) {:channel :list-history}))
+
+    (read-line)))

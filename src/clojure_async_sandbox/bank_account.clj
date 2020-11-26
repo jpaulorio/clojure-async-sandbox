@@ -9,18 +9,15 @@
   ([current-balance]
    (bank-account current-balance []))
   ([current-balance transaction-history]
-   (defmulti bank-account-behavior (fn [message] (:type message)))
-   (defmethod bank-account-behavior :credit [message]
-     (bank-account (+ current-balance (:amount message)) (conj transaction-history message)))
-   (defmethod bank-account-behavior :debit [message]
-     (bank-account (- current-balance (:amount message)) (conj transaction-history message)))
-   (defmethod bank-account-behavior :current-balance [message]
-     (println "Current balance is:" current-balance)
-     (bank-account current-balance transaction-history))
-   (defmethod bank-account-behavior :list-transactions [message]
-     (doseq [transaction transaction-history] (println "Transaction:" (:type transaction) (:amount transaction)))
-     (bank-account current-balance transaction-history))
-   bank-account-behavior))
+   (letfn [(bank-account-behavior [message]
+             (case (:type message)
+               :credit (bank-account (+ current-balance (:amount message)) (conj transaction-history message))
+               :debit (bank-account (- current-balance (:amount message)) (conj transaction-history message))
+               :current-balance (do (println "Current balance is:" current-balance)
+                                    (bank-account current-balance transaction-history))
+               :list-transactions (do (doseq [transaction transaction-history] (println "Transaction:" (:type transaction) (:amount transaction)))
+                                      (bank-account current-balance transaction-history))))]
+     bank-account-behavior)))
 
 
 (defn -main [& args]
